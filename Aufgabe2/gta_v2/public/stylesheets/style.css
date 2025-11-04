@@ -183,6 +183,10 @@ button {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+section > h2 {
+  margin-bottom: 1rem;
+}
+
 
 /* ### TODO ### Styles for Tagging component */
 
@@ -211,6 +215,11 @@ button {
   font-size: 1em;
 }
 
+.tagging form input[type=number] {
+  background-color: var(--primary-light);
+  border: 1px solid var(--background-color);
+}
+
 .tagging form button {
   transition: transform 0.3s ease;
   margin-top: 1em;
@@ -224,6 +233,18 @@ button {
 .tagging form button:hover {
   background-color: #283593;
   transform: scale(1.05);
+}
+
+/*remove Arrows from Inputs*/
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
 }
 
 
