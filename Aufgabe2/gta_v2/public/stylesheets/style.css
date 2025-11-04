@@ -21,7 +21,7 @@ html {
 }
 
 
-/* Variables (example: see declaration for "a" below) */
+/* Variables (example: see declaration for "a" below) */ 
 
 :root {
   --link-color: #00B7FF;
@@ -313,6 +313,9 @@ button {
   border-radius: 6px;
 }
 
+#map { 
+   height: 500px;
+ }
 
 /* ### TODO ### Styles for Footer Component */
 
