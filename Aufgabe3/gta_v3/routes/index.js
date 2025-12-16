@@ -30,6 +30,11 @@ const GeoTag = require('../models/geotag');
  */
 // eslint-disable-next-line no-unused-vars
 const GeoTagStore = require('../models/geotag-store');
+const GeoTagExamples = require('../models/geotag-examples');
+
+// Initialize store with example data
+const store = new GeoTagStore();
+GeoTagExamples.populateStore(store);
 
 /**
  * Route '/' for HTTP 'GET' requests.
@@ -42,7 +47,12 @@ const GeoTagStore = require('../models/geotag-store');
 
 // TODO: extend the following route example if necessary
 router.get('/', (req, res) => {
-  res.render('index', { taglist: [] })
+  const allTags = store.getNearbyGeoTags();
+  res.render('index', { 
+    taglist: allTags,
+    latitude: '',
+    longitude: ''
+  });
 });
 
 /**
@@ -60,7 +70,23 @@ router.get('/', (req, res) => {
  * by radius around a given location.
  */
 
-// TODO: ... your code here ...
+router.post('/tagging', (req, res) => {
+  const { latitude, longitude, name, hashtag } = req.body;
+  
+  // Create and store new geotag
+  const newTag = new GeoTag(latitude, longitude, name, hashtag);
+  store.addGeoTag(newTag);
+  
+  // Get nearby tags around the new geotag
+  const taglist = store.getNearbyGeoTags(latitude, longitude);
+  
+  // Render template with results
+  res.render('index', {
+    taglist: taglist,
+    latitude: latitude,
+    longitude: longitude
+  });
+});
 
 /**
  * Route '/discovery' for HTTP 'POST' requests.
@@ -78,6 +104,18 @@ router.get('/', (req, res) => {
  * by radius and keyword.
  */
 
-// TODO: ... your code here ...
+router.post('/discovery', (req, res) => {
+  const { latitude, longitude, searchterm } = req.body;
+  
+  // Search for nearby tags (with optional keyword filter)
+  const taglist = store.searchNearbyGeoTags(latitude, longitude, searchterm || '');
+  
+  // Render template with results
+  res.render('index', {
+    taglist: taglist,
+    latitude: latitude,
+    longitude: longitude
+  });
+});
 
 module.exports = router;
