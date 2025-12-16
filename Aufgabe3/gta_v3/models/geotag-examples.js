@@ -5,6 +5,9 @@
  * Complete all TODOs in the code documentation.
  */
 
+const GeoTag = require('./geotag');
+const InMemoryGeoTagStore = require('./geotag-store');
+
 /**
  * A class representing example geoTags at HKA
  * 
@@ -29,6 +32,18 @@ class GeoTagExamples {
             ['Building B', 49.016843, 8.391372, '#campus'],
             ['Building K', 49.013190, 8.392090, '#campus'],
         ];
+    }
+
+    /**
+     * Populate a GeoTagStore with example data
+     * @param {InMemoryGeoTagStore} store - The store to populate
+     */
+    static populateStore(store) {
+        GeoTagExamples.tagList.forEach(tagData => {
+            const [name, latitude, longitude, hashtag] = tagData;
+            const geotag = new GeoTag(latitude, longitude, name, hashtag);
+            store.addGeoTag(geotag);
+        });
     }
 }
 
