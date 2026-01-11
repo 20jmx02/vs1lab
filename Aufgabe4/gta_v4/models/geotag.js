@@ -17,7 +17,8 @@ class GeoTag {
      * @param {string} name - The name of the location
      * @param {string} hashtag - The hashtag for the location
      */
-    constructor(latitude, longitude, name, hashtag) {
+    constructor(latitude, longitude, name, hashtag, id = null) {
+        this.id = id;
         this.latitude = parseFloat(latitude);
         this.longitude = parseFloat(longitude);
         this.name = name;

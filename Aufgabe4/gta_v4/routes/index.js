@@ -134,7 +134,48 @@ router.post('/discovery', (req, res) => {
  */
 
 // TODO: ... your code here ...
+router.get('/api/geotags', (req, res) => {
+  const { latitude, longitude, searchterm } = req.query;
 
+  const lat = latitude ? Number(latitude) : null;
+  const lon = longitude ? Number(longitude) : null;
+
+  let taglist;
+
+  // Fall 1: Koordinaten vorhanden
+  if (lat !== null && lon !== null) {
+
+    // 1a: Koordinaten + Suchbegriff
+    if (searchterm && searchterm.trim() !== '') {
+      taglist = store.searchNearbyGeoTags(lat, lon, searchterm);
+    }
+    // 1b: Nur Koordinaten
+    else {
+      taglist = store.getNearbyGeoTags(lat, lon);
+    }
+
+  }
+  // Fall 2: Keine Koordinaten
+  else {
+
+    // 2a: Nur Suchbegriff
+    if (searchterm && searchterm.trim() !== '') {
+      // alle Tags holen und manuell filtern
+      taglist = store
+        .getAllGeoTags()
+        .filter(tag =>
+          tag.name.toLowerCase().includes(searchterm.toLowerCase()) ||
+          tag.hashtag.toLowerCase().includes(searchterm.toLowerCase())
+        );
+    }
+    // 2b: gar keine Filter
+    else {
+      taglist = store.getAllGeoTags();
+    }
+  }
+
+  res.json(taglist);
+});
 
 /**
  * Route '/api/geotags' for HTTP 'POST' requests.
@@ -148,7 +189,22 @@ router.post('/discovery', (req, res) => {
  */
 
 // TODO: ... your code here ...
+router.post('/api/geotags', (req, res) => {
+  const { latitude, longitude, name, hashtag } = req.body; // JSON body
 
+  // minimale Validierung
+  if (latitude === undefined || longitude === undefined || !name) {
+    return res.status(400).json({ error: 'latitude, longitude and name are required' });
+  }
+
+  // GeoTag erzeugen (id wird im Store vergeben)
+  const newTag = new GeoTag(latitude, longitude, name, hashtag);
+  const created = store.addGeoTag(newTag);
+
+  // Location Header + 201 + JSON
+  res.location(`/api/geotags/${created.id}`);
+  return res.status(201).json(created);
+});
 
 /**
  * Route '/api/geotags/:id' for HTTP 'GET' requests.
@@ -161,6 +217,16 @@ router.post('/discovery', (req, res) => {
  */
 
 // TODO: ... your code here ...
+router.get('/api/geotags/:id', (req, res) => {
+  const { id } = req.params;
+
+  const tag = store.getGeoTagById(id);
+  if (!tag) {
+    return res.status(404).json({ error: 'GeoTag not found' });
+  }
+
+  return res.json(tag);
+});
 
 
 /**
@@ -178,6 +244,18 @@ router.post('/discovery', (req, res) => {
  */
 
 // TODO: ... your code here ...
+router.put('/api/geotags/:id', (req, res) => {
+  const { id } = req.params;   // kommt als String
+  const data = req.body;       // JSON body
+
+  const updated = store.updateGeoTag(id, data);
+
+  if (!updated) {
+    return res.status(404).json({ error: 'GeoTag not found' });
+  }
+
+  return res.json(updated);
+});
 
 
 /**
@@ -192,6 +270,16 @@ router.post('/discovery', (req, res) => {
  */
 
 // TODO: ... your code here ...
+router.delete('/api/geotags/:id', (req, res) => {
+  const { id } = req.params;
+
+  const deleted = store.deleteGeoTagById(id);
+  if (!deleted) {
+    return res.status(404).json({ error: 'GeoTag not found' });
+  }
+
+  return res.json(deleted);
+});
 
 
 module.exports = router;

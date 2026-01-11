@@ -25,13 +25,17 @@
  */
 class InMemoryGeoTagStore{
     #geotags = [];
-
+    #nextID = 1;
     /**
      * Add a geotag to the store
      * @param {GeoTag} geotag - The geotag to add
      */
     addGeoTag(geotag) {
+        if (geotag.id === null || geotag.id === undefined) {
+            geotag.id = this.#nextID++;
+        }
         this.#geotags.push(geotag);
+        return geotag;
     }
 
     /**
@@ -115,6 +119,40 @@ class InMemoryGeoTagStore{
         return [...this.#geotags];
     }
          */
+
+    getGeoTagById(id) {
+        const numericId = Number(id);
+        if (Number.isNaN(numericId)) return null;
+        return this.#geotags.find(tag => tag.id === numericId) || null;
+    }
+
+    updateGeoTag(id, data) {
+        const numericId = Number(id);
+        if (Number.isNaN(numericId)) return null;
+
+        const index = this.#geotags.findIndex(tag => tag.id === numericId);
+        if (index === -1) return null;
+
+        // ID niemals überschreiben
+        const { id: _ignored, ...safeData } = (data || {});
+
+        // Merge (überschreibt nur übergebene Felder)
+        this.#geotags[index] = { ...this.#geotags[index], ...safeData, id: numericId };
+
+        return this.#geotags[index];
+    }
+
+    deleteGeoTagById(id) {
+        const numericId = Number(id);
+        if (Number.isNaN(numericId)) return null;
+
+        const index = this.#geotags.findIndex(tag => tag.id === numericId);
+        if (index === -1) return null;
+
+        const [deletedTag] = this.#geotags.splice(index, 1);
+        return deletedTag;
+    }
+    
 }
 
 module.exports = InMemoryGeoTagStore

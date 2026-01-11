@@ -17,6 +17,12 @@ console.log("The geoTagging script is going to start...");
  * OPTIMIZATION: Only calls GeoLocation API if coordinates are not already present in form fields.
  * This reduces latency on repeated page loads.
  */
+
+let mapManager = null;
+let mapInitialized = false;
+
+
+
 function updateLocation() {
     // Get form field references
     const tagLat = document.querySelector("#tag-form input[name='latitude']");
@@ -33,7 +39,8 @@ function updateLocation() {
         // Use existing coordinates
         const latitude = parseFloat(latVal);
         const longitude = parseFloat(lonVal);
-        initializeMap(latitude, longitude);
+        initializeMap(latitude, longitude, []); // Map zeigen
+        reloadDiscovery();                      // echte Daten holen
         return;
     }
 
@@ -49,31 +56,104 @@ function updateLocation() {
         if (discLong) discLong.value = longitude;
 
         // Initialize map with new coordinates
-        initializeMap(latitude, longitude);
+        initializeMap(latitude, longitude, []); // Map zeigen
+        reloadDiscovery().catch(console.error); // echte Daten holen
     });
 }
 
 /**
  * Initialize the map and load markers from data-tags attribute
  */
-function initializeMap(latitude, longitude) {
-    const mapElement = document.getElementById('map');
-    let geoTags = [];
-    if (mapElement && mapElement.dataset.tags) {
-        try {
-            geoTags = JSON.parse(mapElement.dataset.tags);
-        } catch (e) {
-            console.error('Error parsing geotags:', e);
-            geoTags = [];
-        }
+function initializeMap(latitude, longitude, tags = []) {
+    if (!mapManager) mapManager = new MapManager();
+
+    if (!mapInitialized) {
+        mapManager.initMap(latitude, longitude);
+        mapInitialized = true;
     }
 
-    const mapManager = new MapManager();
-    mapManager.initMap(latitude, longitude);
-    mapManager.updateMarkers(latitude, longitude, geoTags);
+    mapManager.updateMarkers(latitude, longitude, tags);
 }
+
+
+
+async function onTagSubmit(event) {
+    event.preventDefault();
+
+    const latitude = parseFloat(document.getElementById('latitude').value);
+    const longitude = parseFloat(document.getElementById('longitude').value);
+    const name = document.getElementById('name').value;
+    const hashtag = document.getElementById('hashtag').value;
+
+    const payload = { latitude, longitude, name, hashtag };
+
+    const response = await fetch('/api/geotags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) throw new Error('POST /api/geotags failed');
+
+    // optional: const created = await response.json();
+    await reloadDiscovery();   // danach Liste+Karte neu laden
+}
+
+async function onDiscoverySubmit(event) {
+    event.preventDefault();
+    await reloadDiscovery();
+}
+
+async function reloadDiscovery() {
+    const searchterm = document.getElementById('searchterm').value;
+
+    const latitude = document.getElementById('disc-latitude').value;
+    const longitude = document.getElementById('disc-longitude').value;
+
+    const params = new URLSearchParams();
+    if (searchterm) params.set('searchterm', searchterm);
+    if (latitude && longitude) {
+        params.set('latitude', latitude);
+        params.set('longitude', longitude);
+        params.set('radius', '10');
+    }
+
+    const response = await fetch(`/api/geotags?${params.toString()}`);
+    if (!response.ok) throw new Error('GET /api/geotags failed');
+
+    const tags = await response.json();
+    updateDiscoveryUI(tags);
+}
+
+
+function updateDiscoveryUI(tags) {
+    const ul = document.getElementById('discoveryResults');
+    ul.innerHTML = '';
+
+    for (const t of tags) {
+        const li = document.createElement('li');
+        li.textContent = `${t.name} (${t.latitude}, ${t.longitude}) ${t.hashtag}`;
+        ul.appendChild(li);
+    }
+
+    const lat = parseFloat(document.getElementById('disc-latitude').value);
+    const lon = parseFloat(document.getElementById('disc-longitude').value);
+
+    if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
+        initializeMap(lat, lon, tags);
+    }
+}
+
+
+
 
 // Wait for the page to fully load its DOM content, then call updateLocation
 document.addEventListener("DOMContentLoaded", () => {
     updateLocation();
+
+    const tagForm = document.getElementById('tag-form');
+    const discoveryForm = document.getElementById('discoveryFilterForm');
+
+    tagForm.addEventListener('submit', onTagSubmit);
+    discoveryForm.addEventListener('submit', onDiscoverySubmit);
 });
