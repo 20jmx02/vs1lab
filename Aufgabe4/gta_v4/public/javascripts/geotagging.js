@@ -20,6 +20,8 @@ console.log("The geoTagging script is going to start...");
 
 let mapManager = null;
 let mapInitialized = false;
+let currentPage = 1;
+const pageSize = 10;
 
 
 
@@ -95,18 +97,19 @@ async function onTagSubmit(event) {
 
     if (!response.ok) throw new Error('POST /api/geotags failed');
 
+    currentPage = 1;      // 🔴 Schritt 8
     // optional: const created = await response.json();
     await reloadDiscovery();   // danach Liste+Karte neu laden
 }
 
 async function onDiscoverySubmit(event) {
     event.preventDefault();
+    currentPage = 1;      // 🔴 Schritt 8
     await reloadDiscovery();
 }
 
 async function reloadDiscovery() {
     const searchterm = document.getElementById('searchterm').value;
-
     const latitude = document.getElementById('disc-latitude').value;
     const longitude = document.getElementById('disc-longitude').value;
 
@@ -118,11 +121,58 @@ async function reloadDiscovery() {
         params.set('radius', '10');
     }
 
+    // 🔴 Punkt 6.1 – Paging-Parameter
+    params.set('page', currentPage);
+    params.set('pageSize', pageSize);
+
     const response = await fetch(`/api/geotags?${params.toString()}`);
     if (!response.ok) throw new Error('GET /api/geotags failed');
 
-    const tags = await response.json();
-    updateDiscoveryUI(tags);
+    // 🔴 Punkt 6.2 – Paging-Response auswerten
+    const result = await response.json();
+
+    updateDiscoveryUI(result.items);
+    renderPaging(result.page, result.totalPages);
+}
+
+
+function renderPaging(page, totalPages) {
+    const paging = document.getElementById('paging');
+    paging.innerHTML = '';
+
+    if (totalPages <= 1) return;
+
+    // Prev
+    const prev = document.createElement('button');
+    prev.textContent = '‹';
+    prev.disabled = page <= 1;
+    prev.onclick = () => {
+        currentPage--;
+        reloadDiscovery();
+    };
+    paging.appendChild(prev);
+
+    // Seitenzahlen (alle anzeigen – einfache Variante)
+    for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.disabled = i === page;
+        btn.onclick = () => {
+        currentPage = i;
+        reloadDiscovery();
+        };
+        paging.appendChild(btn);
+    }
+
+    // Next
+    const next = document.createElement('button');
+    next.textContent = '›';
+    next.disabled = page >= totalPages;
+    next.onclick = () => {
+        currentPage++;
+        reloadDiscovery();
+    };
+    paging.appendChild(next);
 }
 
 

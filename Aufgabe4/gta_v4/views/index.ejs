@@ -127,6 +127,8 @@
                             <li><%= gtag.name %> (<%= gtag.latitude %>, <%= gtag.longitude %>) <%= gtag.hashtag %></li>
                         <% }); %>
                     </ul>
+                    <ul id="discoveryResults"></ul>
+                    <nav id="paging"></nav>
                 </div>
 
                 <div id="map" class="discovery__map col-6" data-tags="<%= taglist !== undefined ? JSON.stringify(taglist) : '[]' %>"></div>

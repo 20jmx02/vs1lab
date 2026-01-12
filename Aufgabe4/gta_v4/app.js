@@ -9,6 +9,8 @@
 /**
  * Define module dependencies.
  */
+let currentPage = 1;
+const pageSize = 10;
 
 const createError = require('http-errors');
 const express = require('express');

@@ -135,6 +135,8 @@ router.post('/discovery', (req, res) => {
 
 // TODO: ... your code here ...
 router.get('/api/geotags', (req, res) => {
+  const page = Number(req.query.page) || 1;
+  const pageSize = Number(req.query.pageSize) || 10;
   const { latitude, longitude, searchterm } = req.query;
 
   const lat = latitude ? Number(latitude) : null;
@@ -174,7 +176,19 @@ router.get('/api/geotags', (req, res) => {
     }
   }
 
-  res.json(taglist);
+  const totalItems = taglist.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+
+  const startIndex = (page - 1) * pageSize;
+  const items = taglist.slice(startIndex, startIndex + pageSize);
+
+  res.json({
+    items,
+    page,
+    pageSize,
+    totalItems,
+    totalPages
+  });
 });
 
 /**
